@@ -1,0 +1,72 @@
+"""
+텐서플로우에서 RNN을 사용하는 방식
+"""
+
+# Cell을 정의한다. (BasicLSTMCell 등의 구현된 클래스 사용. 내부에 연산한 후 output 값과 state 값을 넘겨주는 구조가 정의되어 있음.)
+cell = tf.contrib.rnn.BasicLSTMCell(num_hidden_unit, state_is_tuple = True)
+
+# RNN cell 내부에서 받을 hidden state 값 (previous step으로부터 넘겨받는)에 대한 초기값을 지정하기 위해서 cell 모양 그대로 0을 채워놓은 텐서를 저장해놓는다.
+# (initialize_all_variables()?)
+initial_state = cell.zero_state(batch_size, tf.float32)
+
+# 정의된 cell들을 가지고 (static 혹은) dynamic rnn 구도를 정의한다. 여기서 최종 레이어 단계에서의 output sequence와 최종 state 값을 리턴받는다.
+# (state 값을 다음 iteration에서 쓰고자 한다면 받아오고, 아닐경우 사용하지 않는다.)
+output, _ = tf.nn.dynamic_rnn(cell, input_tensor, sequence_lenth, time_major = False, dtype = tf.float32)
+
+# input_tensor로 받아오는 텐서(input)의 shape를 가지고 알아서 time step의 길이를 추정한다 (sequence_length 생략 가능)
+
+# Batch size x time steps x features
+
+# 이 부분에 유동성을 위해서 time_major라는 argument가 쓰이는데, 보통 [batch_size, num_steps, state_size]의 꼴로 처리를 하지만 이것을 True로 설정하면 
+# [num_steps, batch_size, state_size]의 꼴로 처리한다. 특정 스텝에서 결과값을 얻어내는 데에 유용하게 쓰일 수 있다.
+
+# 시퀀스의 길이가 일정하다면 static RNN을 사용해도 상관없다. (메모리를 미리 잡는 이슈가 있다)
+output, _ = tf.nn.static_rnn(cell, input_tensor, dtype = tf.float32)
+
+# 멀티 레이어 RNN을 사용하고 싶다면, RNN cell을 각각 생성한 뒤에 이를 리스트로 묶어서 tf.contrib.rnn.MultiRNNCell안에 input으로 넣어주면 된다.
+rnn_cells = tf.contrib.rnn.MultiRNNCell([cell1, cell2])
+
+# cell을 생성하는 함수 생성
+def create_rnn_cell():
+  cell = tf.contrib.rnn.BasicLSTMCell(num_units = hidden_size, state_is_tuple = True)
+  return cell
+
+multi_cells = tf.contrib.rnn.MultiRNNCell([create_rnn_cell() for _ in range(2)], state_is_tuple = True)
+
+# 그리고 정의된 multi_cells를 가지고 static 혹은 dynamic rnn 구조를 정의한다.
+outputs, _ = tf.nn.dynamic_rnn(multi_cells, x_data, dtype = tf.float32)
+
+# tf.nn.dynamic_rnn을 처리한 output의 dimension은 cell의 크기와 동일하게 된다.
+# (cell에 지정한 num_units만큼의 output의 dimension이 결정된다.)
+# 즉, [batch_size, sequence_length, input_dim]을 input으로 넣으면 [batch_size, sequence_length, num_units]의 output이 나오게 되는 것이다.
+
+# dynamic_rnn에서 짚고 넘어가야 할 부분은 sequence_length이다.
+outputs, _states = tf.nn.dynamic_rnn(cell, x_data, dtype = tf.float32, sequence_length = [1, 3, 2])
+
+# 위와 같이 지정을 하면, sequence_length 파라미터에 들어오는 array의 element들 만큼의 길이로 차례차례 input을 처리하게 된다.
+# (서로 다른 길이의 input들이 들어올 때, zero-padding을 해서 길이를 맞출 필요없이 지정된 길이만큼만 시퀀스를 학습하는 것)
+
+# tf.contrib.seq2sequence_loss를 사용한 시퀀스의 각 엘리먼트에 대한 loss 계산
+weights = tf.ones([batch_size, sequence_length])
+sequence_loss = tf.contrib.seq2seq.sequence_loss(logits = RNN_cell_output, targets = True_Y, weights = weights)
+# weight는 시퀀스의 각 엘리먼트가 갖는 가중치(loss 에서의)
+# logits 부분은 one hot encoding이고, targets 부분은 one hot encoding으로 하지 않음
+
+# 따라서
+# logits에 들어갈 RNN_cell_output : [batch_size, sequence_length, num_classes]
+# targets에 들어갈 레이블 True_Y : [batch_size, sequence_length]
+# 둘을 가지고 알아서 sequence에 대한 cross-entropy loss를 계산하여 준다.
+
+# LSTM의 마지막 스텝에서의 output만 가지고 loss를 계산하고자 할 때는 다음과 같이 뽑아내면 된다.
+
+# flatten the LSTM output to make input of fully connected layer (after LSTM)
+input_for_fc = tf.reshape(LSTM_output, [-1, hidden_LSTM_cell_size])
+
+# perform fc layer
+fc_output = tf.contrib.layers.fully_connected(input = input_for_fc, num_outputs = num_output_classes, activation_fn = None)
+
+# reshaping process to get last step's [batch x num_output_classes]
+fc_output_reshaped = tf.reshape(fc_output, [input_batch_size, num_steps, num_output
+
+
+# ...
