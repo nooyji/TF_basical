@@ -1,0 +1,26 @@
+Objective function에 대해
+미니 배치등의 도입으로 gradient를 계산하는 cost function이 매 update마다 달라지는 것은 이미 잘 알고 있는 사실이다.
+또한 dropout등으로 인해 objective function에는 다양한 노이즈가 섞이게 되었다.
+이러한 점을 고려할 때 objective function을 stochastic function으로 이해할 수 있다.
+이 논문 저자는 이러한 stochastic optimization & high dimensional 문제에서는 SGD, momentum method에서 많이 봐왔던 1st order method가 higher-order method보다 적합하다고 판단했다.
+
+Adam method의 강점
+저자가 말하는 Adam method의 주요 장점은 stepsize가 gradient의 rescaling에 영향 받지 않는다는 것이다.
+gradient가 커져도 stepsize는 bound되어 있어서 어떠한 objective function을 사용한다 하더라도 안정적으로 최적화를 위한 하강이 가능하다.
+게다가 stepsize를 과거의 gradient 크기를 참고하여 adapted 시킬 수 있다.
+
+related work
+AdaGrad
+AdaGrad가 추구하는 것은 과거의 gradient 변화량을 참고하는 것이다.
+이미 많이 변화한 변수들은 optimum에 거의 도달했다고 보고 stepsize를 작게하고 싶고,
+여태까지 많이 변화하지 않은 변수들을 아직 가야할 길이 멀다고 보고 stepsize를 크게 하고싶은 것이다.
+따라서 Gt 변수를 도입해서 여태까지의 gradient의 L2 norm을 저장한다.
+
+하지만 여기에는 여러가지 문제점들이 있다. iteration이 계속될수록 G가 계속 증가해서 stepsize가 너무 작아질 수 있기 때문이다.
+이러한 문제를 보완하기 위해서 RMSProp처럼 exponential moving average를 사용하는 방법이 고안되었다.
+exponential moving average는 수식에서 알 수 있듯이 과거의 정보에 가중치를 작게 부여한다.
+최근 값에 가장 민감하도록 최고 가중치를 부여하는 형태이다.
+또 몇 가지 가정과 계산을 통해 xt가 bounded되어 max{gi}i=0,1,2,...,t 이상으로 커지지 않는다는 사실도 알 수 있다.
+
+
+RMSProp
